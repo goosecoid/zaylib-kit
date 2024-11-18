@@ -11,4 +11,4 @@ $ cd PROJECT_NAME
 $ zig build run
 ```
 
-Linux only
+No windows
