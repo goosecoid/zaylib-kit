@@ -1,9 +1,18 @@
 #!/usr/bin/env sh
 
+RAYLIB_URL=""
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    RAYLIB_URL="https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_linux_amd64.tar.gz"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    RAYLIB_URL="https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_macos.tar.gz"
+else
+    echo "Unsupported OS, only linux-gnu and darwin are supported. Aborting..."
+fi
+
 PROJECT_NAME=$1
 
-if [ -z "$1" ]
-then
+if [ -z "$1" ]; then
     PROJECT_NAME="hello_world"
 fi
 
@@ -30,11 +39,26 @@ pub fn build(b: *std.Build) void {
     exe.addObjectFile(
         switch (target.result.os.tag) {
             .linux => b.path("raylib/lib/libraylib.a"),
+            .macos => b.path("raylib/lib/libraylib.a"),
             // TODO: add other OS'es
             else => @panic("Unsupported OS"),
         }
     );
     exe.addIncludePath(b.path("raylib/include"));
+
+    switch (target.result.os.tag) {
+        .linux => {},
+        .macos => {
+            exe.linkFramework("Cocoa");
+            exe.linkFramework("OpenGL");
+            exe.linkFramework("CoreAudio");
+            exe.linkFramework("CoreVideo");
+            exe.linkFramework("IOKit");
+        },
+        // TODO: add other OS'es
+        else => @panic("Unsupported OS"),
+    }
+
 
     b.installArtifact(exe);
 
@@ -51,12 +75,11 @@ pub fn build(b: *std.Build) void {
 
 EOF
 
-echo "$BUILD_FILE" > build.zig
+echo "$BUILD_FILE" >build.zig
 
 mkdir src
 
 cd src
-
 
 read -r -d '' HELLO_WORLD <<EOF
 
@@ -84,12 +107,11 @@ pub fn main() void {
 }
 EOF
 
-echo "$HELLO_WORLD" > main.zig
+echo "$HELLO_WORLD" >main.zig
 
 cd ..
 
-
-wget https://github.com/raysan5/raylib/releases/download/5.0/raylib-5.0_linux_amd64.tar.gz
+wget "$RAYLIB_URL"
 
 tar -xvf raylib-*
 rm raylib-*.tar.gz
